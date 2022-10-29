@@ -210,6 +210,18 @@ export class UserCommand extends Subcommand {
                 text: `requested by ${interaction.user.tag}`,
                 iconURL: interaction.user.displayAvatarURL({dynamic: true})
             });
+        embed.fields = [
+            {
+                name: 'Urgency',
+                value: urgency,
+                inline: true
+            },
+            {
+                name: 'Status',
+                value: 'Open',
+                inline: true
+            }
+        ];
         return await channel.send({embeds: [embed]});
     }
 
