@@ -199,11 +199,11 @@ export class UserCommand extends Subcommand {
         const response = await connection.execute(query, [name, description, urgency]);
         await connection.end();
 
-        await interaction.reply({ephemeral: true, content: `Added TODO #${response[0].insertId}`});
+        await interaction.reply({ephemeral: true, content: `Added TODO #${response.insertId}`});
 
         const channel = await this.container.client.channels.fetch(`${process.env.TODO_CHANNEL}`) as TextChannel;
         const embed = new MessageEmbed()
-            .setTitle(`New TODO: ${name} (#${response[0].insertId})`)
+            .setTitle(`New TODO: ${name} (#${response.insertId})`)
             .setDescription(description)
             .setColor('GREEN')
             .setFooter({
