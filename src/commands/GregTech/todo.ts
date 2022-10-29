@@ -386,6 +386,12 @@ export class UserCommand extends Subcommand {
         const id = interaction.options.getInteger('id', true);
 
         const connection = await getConnection();
+
+        const oldTODO = await connection.query('SELECT * FROM todo WHERE id = ?', [id]);
+        if (oldTODO[0].claimed_by) return interaction.editReply({
+            content: `Task ${id} is already claimed by <@${oldTODO[0].claimed_by}>`,
+        });
+
         const query = 'UPDATE todo SET status = ?, claimed_by = ? WHERE id = ?';
         await connection.execute(query, ['IN_PROGRESS', interaction.user.id, id]);
 
@@ -457,6 +463,16 @@ export class UserCommand extends Subcommand {
         const id = interaction.options.getInteger('id', true);
 
         const connection = await getConnection();
+
+        const oldTODO = await connection.query('SELECT * FROM todo WHERE id = ?', [id]);
+        if (!oldTODO[0].claimed_by) return interaction.editReply({
+            content: `Task ${id} is not claimed by anyone.`,
+        });
+
+        if (oldTODO[0].claimed_by !== interaction.user.id) return interaction.editReply({
+            content: `Task ${id} is claimed by <@${oldTODO[0].claimed_by}>, not you.`,
+        });
+
         const query = 'UPDATE todo SET status = ?, claimed_by = ? WHERE id = ?';
         await connection.execute(query, ['OPEN', null, id]);
 
