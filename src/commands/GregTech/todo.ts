@@ -76,7 +76,7 @@ export class UserCommand extends Subcommand {
                         .addStringOption((option) => option.setName('name').setDescription('Short name of TODO').setRequired(true))
                         .addStringOption((option) => option.setName('description').setDescription('What are we planning?').setRequired(true))
                         .addStringOption((option) => {
-                            let _option = option.setName('urgency').setDescription('How urgent is this task?').setRequired(false);
+                            let _option = option.setName('urgency').setDescription('How urgent is this task?').setRequired(true);
                             for (const choice of urgency) {
                                 _option = _option.addChoices(choice);
                             }
@@ -192,7 +192,7 @@ export class UserCommand extends Subcommand {
     public async addTodo(interaction: Subcommand.ChatInputInteraction) {
         const name = interaction.options.getString('name', true);
         const description = interaction.options.getString('description', true);
-        const urgency = interaction.options.getString('urgency', false);
+        const urgency = interaction.options.getString('urgency', true);
 
         const connection = await getConnection();
         const query = 'INSERT INTO todo (name, description, urgency) VALUES (?, ?, ?)';
