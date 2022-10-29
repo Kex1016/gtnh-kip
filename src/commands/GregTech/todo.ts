@@ -196,14 +196,14 @@ export class UserCommand extends Subcommand {
 
         const connection = await getConnection();
         const query = 'INSERT INTO todo (name, description, urgency) VALUES (?, ?, ?)';
-        await connection.execute(query, [name, description, urgency]);
+        const response = await connection.execute(query, [name, description, urgency]);
         await connection.end();
 
-        await interaction.reply(`Added task ${name} to the TODO list`);
+        await interaction.reply({ephemeral: true, content: `Added TODO #${response[0].insertId}`});
 
         const channel = await this.container.client.channels.fetch(`${process.env.TODO_CHANNEL}`) as TextChannel;
         const embed = new MessageEmbed()
-            .setTitle(`New TODO: ${name}`)
+            .setTitle(`New TODO: ${name} (#${response[0].insertId})`)
             .setDescription(description)
             .setColor('GREEN')
             .setFooter({
@@ -304,23 +304,75 @@ export class UserCommand extends Subcommand {
     }
 
     public async removeTodo(interaction: Subcommand.ChatInputInteraction) {
+        const loadEmbed = new MessageEmbed()
+            .setDescription(`<a:loading:695008953934938143> ${getLoadingMessage()}`)
+            .setColor('YELLOW');
+
+        await interaction.reply({embeds: [loadEmbed], fetchReply: true, ephemeral: true});
+
         const id = interaction.options.getInteger('id', true);
 
         const connection = await getConnection();
+        const oldTODO = await connection.query('SELECT * FROM todo WHERE id = ?', [id]);
         const query = 'DELETE FROM todo WHERE id = ?';
         await connection.execute(query, [id]);
         await connection.end();
 
-        await interaction.reply(`Removed task ${id} from the TODO list`);
+        await interaction.editReply({
+            content: `Removed task ${id} from the TODO list. Here's the old info:`,
+            embeds: [new MessageEmbed()
+                .setTitle(`#${oldTODO[0].id} - ${oldTODO[0].name}`)
+                .setDescription(oldTODO[0].description)
+                .setColor('RED')
+                .setFooter({
+                    text: `requested by ${interaction.user.tag}`,
+                    iconURL: interaction.user.displayAvatarURL({dynamic: true})
+                })
+                .addFields([
+                    {
+                        name: 'Urgency',
+                        value: `${oldTODO[0].urgency}`,
+                        inline: true
+                    },
+                    {
+                        name: 'Status',
+                        value: `${oldTODO[0].status}`,
+                        inline: true
+                    }
+                ])
+            ]
+        });
 
         const channel = await this.container.client.channels.fetch(`${process.env.TODO_CHANNEL}`) as TextChannel;
         const embed = new MessageEmbed()
-            .setTitle(`TODO Removed: ${id}`)
+            .setTitle(`TODO Removed: ${oldTODO[0].name}`)
+            .setDescription(`${oldTODO[0].description}`)
             .setColor('RED')
             .setFooter({
                 text: `requested by ${interaction.user.tag}`,
                 iconURL: interaction.user.displayAvatarURL({dynamic: true})
             });
+        embed.fields = [
+            {
+                name: 'Urgency',
+                value: `${oldTODO[0].urgency}`,
+                inline: true
+            },
+            {
+                name: 'Status',
+                value: `${oldTODO[0].status}`,
+                inline: true
+            },
+            {
+                name: 'Claimed By',
+                value: `${oldTODO[0].claimed_by ? `<@${oldTODO[0].claimed_by}>` : 'Nobody'}`,
+                inline: true
+            }
+        ];
+        embed.author = {
+            name: `TODO Removed (#${oldTODO[0].id}) by ${interaction.user.tag}`,
+            iconURL: interaction.user.displayAvatarURL({dynamic: true})
+        }
         return await channel.send({embeds: [embed]});
     }
 
